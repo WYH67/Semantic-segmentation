@@ -1,2 +1,2 @@
-*.js linguist-language=Pytorch
-*.css linguist-language=Pytorch
+*.js linguist-language=pytorch
+*.css linguist-language=pytorch
