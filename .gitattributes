@@ -1,0 +1,2 @@
+*.cs linguist-language=pytorch
+*.ico linguist-language=pytorch
