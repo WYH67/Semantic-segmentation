@@ -1,0 +1,2 @@
+*.js linguist-language=pytorch
+*.css linguist-language=pytorch
