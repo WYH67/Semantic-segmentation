@@ -1,143 +1,73 @@
-# reference from import torchvision.models.segmentation.fcn
-# reference from https://github.com/wkentaro/pytorch-fcn/blob/main/torchfcn/models/fcn8s.py
+from doctest import master
 
-import torch.nn as nn
-import numpy as np
 import torch
+from torch import nn
+from torchvision import models
 
+from utils import get_upsampling_weight
+from config import vgg16_caffe_path
 
-# https://github.com/shelhamer/fcn.berkeleyvision.org/blob/master/surgery.py
-def get_upsampling_weight(in_channels, out_channels, kernel_size):
-    """Make a 2D bilinear kernel suitable for upsampling"""
-    factor = (kernel_size + 1) // 2
-    if kernel_size % 2 == 1:
-        center = factor - 1
-    else:
-        center = factor - 0.5
-    og = np.ogrid[:kernel_size, :kernel_size]
-    filt = (1 - abs(og[0] - center) / factor) * \
-           (1 - abs(og[1] - center) / factor)
-    weight = np.zeros((in_channels, out_channels, kernel_size, kernel_size),
-                      dtype=np.float64)
-    weight[range(in_channels), range(out_channels), :, :] = filt
-    return torch.from_numpy(weight).float()
+class FCN32VGG(nn.Module):
+    def __init__(self, num_classes, pretrained=True):   # 需要用预训练模型，设置pretrained=True
+        super(FCN32VGG, self).__init__() # 把FCN32VGG父类的__init__()放到自己的__init__()当中，使其拥有父类中的__init__()中的东西
+        vgg = models.vgg16()    # 载入vgg16模型
+        if pretrained:  # 判断是否需要预训练
+            vgg.load_state_dict(torch.load(vgg16_caffe_path))   # 加载预训练的参数权重
 
+        # vgg.features是取出vgg16网络中的features大层。其中vgg网络可以分为3大层，一层是（features），一层是（avgpool），最后一层是（classifier）
+        # 左边features, classifier大层被赋值，右边将feature,classifier每个子模块取出转为列表
+        features, classifier = list(vgg.features.children()), list(vgg.classifier.children())
 
-class FCN32s(nn.Module):
-    def __init__(self, n_class=21):
-        super(FCN32s, self).__init__()
-        # conv1
-        self.conv1_1 = nn.Conv2d(3, 64, 3, padding=100)
-        self.relu1_1 = nn.ReLU(inplace=True)
-        self.conv1_2 = nn.Conv2d(64, 64, 3, padding=1)
-        self.relu1_2 = nn.ReLU(inplace=True)
-        self.pool1 = nn.MaxPool2d(2, stride=2, ceil_mode=True)  # 1/2
+        features[0].padding = (100, 100)    # FCN原论文中backbone的第一个卷积层padding=100，为了防止图片过小（例如192192）后面的卷积层会报错
 
-        # conv2
-        self.conv2_1 = nn.Conv2d(64, 128, 3, padding=1)
-        self.relu2_1 = nn.ReLU(inplace=True)
-        self.conv2_2 = nn.Conv2d(128, 128, 3, padding=1)
-        self.relu2_2 = nn.ReLU(inplace=True)
-        self.pool2 = nn.MaxPool2d(2, stride=2, ceil_mode=True)  # 1/4
+        for f in features:
+            if 'MaxPool' in f.__class__.__name__:   # 如果'MaxPool'在当前类名称中
+                f.ceil_mode = True  # ceil_mode直接影响着计算方式和输出结果
+            # ceil_mode 为True时的情况
+            # torch.Size([1, 1, 5, 5])
+            # tensor([[[[2., 3.],
+            #           [5., 1.]]]])
 
-        # conv3
-        self.conv3_1 = nn.Conv2d(128, 256, 3, padding=1)
-        self.relu3_1 = nn.ReLU(inplace=True)
-        self.conv3_2 = nn.Conv2d(256, 256, 3, padding=1)
-        self.relu3_2 = nn.ReLU(inplace=True)
-        self.conv3_3 = nn.Conv2d(256, 256, 3, padding=1)
-        self.relu3_3 = nn.ReLU(inplace=True)
-        self.pool3 = nn.MaxPool2d(2, stride=2, ceil_mode=True)  # 1/8
+            # ceil_mode 为False时的情况
+            # torch.Size([1, 1, 5, 5])
+            # tensor([[[[2.]]]])
 
-        # conv4
-        self.conv4_1 = nn.Conv2d(256, 512, 3, padding=1)
-        self.relu4_1 = nn.ReLU(inplace=True)
-        self.conv4_2 = nn.Conv2d(512, 512, 3, padding=1)
-        self.relu4_2 = nn.ReLU(inplace=True)
-        self.conv4_3 = nn.Conv2d(512, 512, 3, padding=1)
-        self.relu4_3 = nn.ReLU(inplace=True)
-        self.pool4 = nn.MaxPool2d(2, stride=2, ceil_mode=True)  # 1/16
+            elif 'ReLU' in f.__class__.__name__:    # 如果'ReLU'在当前类名称中
+                f.inplace = True    # 不创建新的对象，直接对原始对象进行修改
 
-        # conv5
-        self.conv5_1 = nn.Conv2d(512, 512, 3, padding=1)
-        self.relu5_1 = nn.ReLU(inplace=True)
-        self.conv5_2 = nn.Conv2d(512, 512, 3, padding=1)
-        self.relu5_2 = nn.ReLU(inplace=True)
-        self.conv5_3 = nn.Conv2d(512, 512, 3, padding=1)
-        self.relu5_3 = nn.ReLU(inplace=True)
-        self.pool5 = nn.MaxPool2d(2, stride=2, ceil_mode=True)  # 1/32
+        self.features5 = nn.Sequential(*features)  # 将每一个feature按照顺序送入到nn.Sequential中
 
-        # fc6
-        self.fc6 = nn.Conv2d(512, 4096, 7)
-        self.relu6 = nn.ReLU(inplace=True)
-        self.drop6 = nn.Dropout2d()
+        # 之后经过FC6层：由于将FC6卷积层的padding设置为3、卷积核大小7*7，通过FC6之后将不会改变特征图的高和宽；且我们使用了4096个卷积核，所以这里就得到了4096个2D特征图。
+        fc6 = nn.Conv2d(512, 4096, kernel_size=7)
+        fc6.weight.data.copy_(classifier[0].weight.data.view(4096, 512, 7, 7))  # embedding.weight.data.copy_(weight_matrix):使用预训练的词向量，在此处指定预训练的权重
+        fc6.bias.data.copy_(classifier[0].bias.data)
 
-        # fc7
-        self.fc7 = nn.Conv2d(4096, 4096, 1)
-        self.relu7 = nn.ReLU(inplace=True)
-        self.drop7 = nn.Dropout2d()
+        # 经过FC7：使用了1*1大小的卷积核，步距也为1，所以输出特征图shape也不会发生变化
+        fc7 = nn.Conv2d(4096, 4096, kernel_size=1)
+        fc7.weight.data.copy_(classifier[3].weight.data.view(4096, 4096, 1, 1))
+        fc7.bias.data.copy_(classifier[3].bias.data)
 
-        self.score_fr = nn.Conv2d(4096, n_class, 1)
-        self.upscore = nn.ConvTranspose2d(n_class, n_class, 64, stride=32,
-                                          bias=False)
+        # 经过卷积核大小为1*1的卷积层：它的卷积核的个数和我们的分类类别数一样（包含背景，对于voc为20类+1背景），将特征图通道数变为num_cls
+        score_fr = nn.Conv2d(4096, num_classes, kernel_size=1)
+        score_fr.weight.data.zero_()  # 权重设置为0
+        score_fr.bias.data.zero_()  # 偏置设置为0
+        self.score_fr = nn.Sequential(
+            fc6, nn.ReLU(inplace=True), nn.Dropout(), fc7, nn.ReLU(inplace=True), nn.Dropout(), score_fr
+        )  # 将FC6和FC7的三步+1×1卷积一并顺序传入到self.score_fr
 
-        self._initialize_weights()
-
-    def _initialize_weights(self):
-        for m in self.modules():
-            if isinstance(m, nn.Conv2d):
-                m.weight.data.zero_()
-                if m.bias is not None:
-                    m.bias.data.zero_()
-            if isinstance(m, nn.ConvTranspose2d):
-                assert m.kernel_size[0] == m.kernel_size[1]
-                initial_weight = get_upsampling_weight(
-                    m.in_channels, m.out_channels, m.kernel_size[0])
-                m.weight.data.copy_(initial_weight)
+        # 通过一个转置卷积：这里的s32我们会将特征图上采样32倍[原论文中使用的是双线性插值]，得到特征图大小变为h，w，num_cls
+        self.upscore = nn.ConvTranspose2d(num_classes, num_classes, kernel_size=64, stride=32, bias=False)
+        # self.upscore.weight.data.copy_(get_upsampling_weight())
 
     def forward(self, x):
-        h = x
-        h = self.relu1_1(self.conv1_1(h))
-        h = self.relu1_2(self.conv1_2(h))
-        h = self.pool1(h)
-
-        h = self.relu2_1(self.conv2_1(h))
-        h = self.relu2_2(self.conv2_2(h))
-        h = self.pool2(h)
-
-        h = self.relu3_1(self.conv3_1(h))
-        h = self.relu3_2(self.conv3_2(h))
-        h = self.relu3_3(self.conv3_3(h))
-        h = self.pool3(h)
-
-        h = self.relu4_1(self.conv4_1(h))
-        h = self.relu4_2(self.conv4_2(h))
-        h = self.relu4_3(self.conv4_3(h))
-        h = self.pool4(h)
-
-        h = self.relu5_1(self.conv5_1(h))
-        h = self.relu5_2(self.conv5_2(h))
-        h = self.relu5_3(self.conv5_3(h))
-        h = self.pool5(h)
-
-        h = self.relu6(self.fc6(h))
-        h = self.drop6(h)
-
-        h = self.relu7(self.fc7(h))
-        h = self.drop7(h)
-
-        h = self.score_fr(h)
-
-        h = self.upscore(h)
-        h = h[:, :, 19:19 + x.size()[2], 19:19 + x.size()[3]].contiguous()
-
-        return h
-
+        x_size = x.size()
+        pool5 = self.features5(x)
+        score_fr = self.score_fr(pool5)
+        upscore = self.upscore(score_fr)
+        return upscore[:, :, 19: (19 + x_size[2]), 19: (19 + x_size[3])].contiguous()
 
 if __name__ == '__main__':
-    import torchstat
-    x = torch.rand(1,3,224,224)
-    model = FCN32s()
-    y = model(x)
-    # print(y.shape)
-    torchstat.stat(model,input_size=(3,224,224))
+    X = torch.rand(1,3,224,224)
+    net = FCN32VGG(num_classes=21, pretrained=False)
+    out = net(X)
+    print(out.shape)
