@@ -1,3 +1,6 @@
+# reference from import torchvision.models.segmentation.fcn
+# reference from https://github.com/wkentaro/pytorch-fcn/blob/main/torchfcn/models/fcn8s.py
+
 from doctest import master
 
 import torch
