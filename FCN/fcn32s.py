@@ -7,15 +7,11 @@ import torch
 from torch import nn
 from torchvision import models
 
-from utils import get_upsampling_weight
-from config import vgg16_caffe_path
 
 class FCN32VGG(nn.Module):
-    def __init__(self, num_classes, pretrained=True):   # 需要用预训练模型，设置pretrained=True
+    def __init__(self, num_classes):
         super(FCN32VGG, self).__init__() # 把FCN32VGG父类的__init__()放到自己的__init__()当中，使其拥有父类中的__init__()中的东西
         vgg = models.vgg16()    # 载入vgg16模型
-        if pretrained:  # 判断是否需要预训练
-            vgg.load_state_dict(torch.load(vgg16_caffe_path))   # 加载预训练的参数权重
 
         # vgg.features是取出vgg16网络中的features大层。其中vgg网络可以分为3大层，一层是（features），一层是（avgpool），最后一层是（classifier）
         # 左边features, classifier大层被赋值，右边将feature,classifier每个子模块取出转为列表
@@ -60,7 +56,7 @@ class FCN32VGG(nn.Module):
 
         # 通过一个转置卷积：这里的s32我们会将特征图上采样32倍[原论文中使用的是双线性插值]，得到特征图大小变为h，w，num_cls
         self.upscore = nn.ConvTranspose2d(num_classes, num_classes, kernel_size=64, stride=32, bias=False)
-        # self.upscore.weight.data.copy_(get_upsampling_weight())
+
 
     def forward(self, x):
         x_size = x.size()
@@ -71,6 +67,6 @@ class FCN32VGG(nn.Module):
 
 if __name__ == '__main__':
     X = torch.rand(1,3,224,224)
-    net = FCN32VGG(num_classes=21, pretrained=False)
+    net = FCN32VGG(num_classes=21)
     out = net(X)
     print(out.shape)

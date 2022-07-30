@@ -5,9 +5,6 @@ import torch
 from torch import nn
 from torchvision import models
 
-from utils import get_upsampling_weight
-from config import vgg16_caffe_path
-
 '''
 相同点：FC6、FC7、Conv2d核32s的一样
 不同点：
@@ -16,11 +13,10 @@ from config import vgg16_caffe_path
     3.之后进行一个相加操作，转置卷积上采样16倍就得到了原图大小h，w，num_cls 
 '''
 class FCN16VGG(nn.Module):
-    def __init__(self, num_classes, pretrained=True):
+    def __init__(self, num_classes):
         super(FCN16VGG, self).__init__()
         vgg = models.vgg16()
-        if pretrained:
-            vgg.load_state_dict(torch.load(vgg16_caffe_path))
+
         features, classifier = list(vgg.features.children()), list(vgg.classifier.children())
 
         features[0].padding = (100, 100)
@@ -78,6 +74,6 @@ class FCN16VGG(nn.Module):
 
 if __name__ == '__main__':
     X = torch.rand(1,3,224,224)
-    net = FCN16VGG(num_classes=21, pretrained=False)
+    net = FCN16VGG(num_classes=21)
     out = net(X)
     print(out.shape)
