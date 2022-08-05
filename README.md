@@ -15,13 +15,13 @@
 
 - [x]  🚌 FCN（PyTorch）
 - [x] 🚌 UNet（PyTorch）
-- [] 🚌 SegNet（PyTorch）
-- [] 🚌 DeepLabv1（PyTorch）
-- [] 🚌 DeepLabv2（PyTorch）
-- [] 🚌 DeepLabv3（PyTorch）
-- [] 🚌 DeepLabv3+（PyTorch）
-- [] 🚌 RefineNet（PyTorch）
-- [] 🚌 PSPNet（PyTorch）
+- [ ] 🚌 SegNet（PyTorch）
+- [ ] 🚌 DeepLabv1（PyTorch）
+- [ ] 🚌 DeepLabv2（PyTorch）
+- [ ] 🚌 DeepLabv3（PyTorch）
+- [ ] 🚌 DeepLabv3+（PyTorch）
+- [ ] 🚌 RefineNet（PyTorch）
+- [ ] 🚌 PSPNet（PyTorch）
 - [ ] 🚌 HRNet（PyTorch）
 
 
