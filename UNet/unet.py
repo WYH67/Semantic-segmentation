@@ -1,81 +1,144 @@
-# reference from https://github.com/zijundeng/pytorch-semantic-segmentation/blob/master/models/u_net.py
-import torch
+import torch.nn as nn
 import torch.nn.functional as F
-from torch import nn
+import torch.utils.data
+import torch
 
-class _EncoderBlock(nn.Module):
-    def __init__(self, in_channels, out_channels, dropout=False):
-        super(_EncoderBlock, self).__init__()
-        layers = [
-            nn.Conv2d(in_channels, out_channels, kernel_size=3),
-            nn.BatchNorm2d(out_channels),       # Q1.BatchNorm2d的优点是什么
+
+
+"""
+    构造上采样模块--左边特征提取基础模块    
+"""
+
+class conv_block(nn.Module):
+    """
+    Convolution Block
+    """
+
+    def __init__(self, in_ch, out_ch):
+        super(conv_block, self).__init__()
+
+        self.conv = nn.Sequential(
+            nn.Conv2d(in_ch, out_ch, kernel_size=3, stride=1, padding=1, bias=True),
+            # 在卷积神经网络的卷积层之后总会添加BatchNorm2d进行数据的归一化处理，这使得数据在进行Relu之前不会因为数据过大而导致网络性能的不稳定
+            nn.BatchNorm2d(out_ch),
             nn.ReLU(inplace=True),
-            nn.Conv2d(out_channels, out_channels, kernel_size=3),
-            nn.BatchNorm2d(out_channels),
-            nn.ReLU(inplace=True),
-        ]
-        if dropout:
-            layers.append(nn.Dropout())
-        layers.append(nn.MaxPool2d(kernel_size=2, stride=2))
-        self.encode = nn.Sequential(*layers)
+            nn.Conv2d(out_ch, out_ch, kernel_size=3, stride=1, padding=1, bias=True),
+            nn.BatchNorm2d(out_ch),
+            nn.ReLU(inplace=True))
 
     def forward(self, x):
-        return self.encode(x)
+        x = self.conv(x)
+        return x
 
 
-class _DecoderBlock(nn.Module):
-    def __init__(self, in_channels, middle_channels, out_channels):
-        super(_DecoderBlock, self).__init__()
-        self.decode = nn.Sequential(
-            nn.Conv2d(in_channels, middle_channels, kernel_size=3),
-            nn.BatchNorm2d(middle_channels),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(middle_channels, middle_channels, kernel_size=3),
-            nn.BatchNorm2d(middle_channels),
-            nn.ReLU(inplace=True),
-            nn.ConvTranspose2d(middle_channels, out_channels, kernel_size=2, stride=2),
+"""
+    构造下采样模块--右边特征融合基础模块    
+"""
+
+class up_conv(nn.Module):
+    """
+    Up Convolution Block
+    """
+
+    def __init__(self, in_ch, out_ch):
+        super(up_conv, self).__init__()
+        self.up = nn.Sequential(
+            nn.Upsample(scale_factor=2),
+            nn.Conv2d(in_ch, out_ch, kernel_size=3, stride=1, padding=1, bias=True),
+            nn.BatchNorm2d(out_ch),
+            nn.ReLU(inplace=True)
         )
 
     def forward(self, x):
-        return self.decode(x)
+        x = self.up(x)
+        return x
 
+"""
+    模型主架构
+"""
 
-class UNet(nn.Module):
-    def __init__(self, num_classes):
-        super(UNet, self).__init__()
-        self.enc1 = _EncoderBlock(3, 64)
-        self.enc2 = _EncoderBlock(64, 128)
-        self.enc3 = _EncoderBlock(128, 256)
-        self.enc4 = _EncoderBlock(256, 512, dropout=True)
-        self.center = _DecoderBlock(512, 1024, 512)
-        self.dec4 = _DecoderBlock(1024, 512, 256)
-        self.dec3 = _DecoderBlock(512, 256, 128)
-        self.dec2 = _DecoderBlock(256, 128, 64)
-        self.dec1 = nn.Sequential(
-            nn.Conv2d(128, 64, kernel_size=3),
-            nn.BatchNorm2d(64),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(64, 64, kernel_size=3),
-            nn.BatchNorm2d(64),
-            nn.ReLU(inplace=True),
-        )
-        self.final = nn.Conv2d(64, num_classes, kernel_size=1)  # Q2.1×1卷积核的优点是什么
+class U_Net(nn.Module):
+    """
+    UNet - Basic Implementation
+    Paper : https://arxiv.org/abs/1505.04597
+    """
 
+    # 输入是3个通道的RGB图，输出是0或1——因为我的任务是2分类任务
+    def __init__(self, in_ch=3, out_ch=2):
+        super(U_Net, self).__init__()
+
+        # 卷积参数设置
+        n1 = 64
+        filters = [n1, n1 * 2, n1 * 4, n1 * 8, n1 * 16]
+
+        # 最大池化层
+        self.Maxpool1 = nn.MaxPool2d(kernel_size=2, stride=2)
+        self.Maxpool2 = nn.MaxPool2d(kernel_size=2, stride=2)
+        self.Maxpool3 = nn.MaxPool2d(kernel_size=2, stride=2)
+        self.Maxpool4 = nn.MaxPool2d(kernel_size=2, stride=2)
+
+        # 左边特征提取卷积层
+        self.Conv1 = conv_block(in_ch, filters[0])
+        self.Conv2 = conv_block(filters[0], filters[1])
+        self.Conv3 = conv_block(filters[1], filters[2])
+        self.Conv4 = conv_block(filters[2], filters[3])
+        self.Conv5 = conv_block(filters[3], filters[4])
+
+        # 右边特征融合反卷积层
+        self.Up5 = up_conv(filters[4], filters[3])
+        self.Up_conv5 = conv_block(filters[4], filters[3])
+
+        self.Up4 = up_conv(filters[3], filters[2])
+        self.Up_conv4 = conv_block(filters[3], filters[2])
+
+        self.Up3 = up_conv(filters[2], filters[1])
+        self.Up_conv3 = conv_block(filters[2], filters[1])
+
+        self.Up2 = up_conv(filters[1], filters[0])
+        self.Up_conv2 = conv_block(filters[1], filters[0])
+
+        self.Conv = nn.Conv2d(filters[0], out_ch, kernel_size=1, stride=1, padding=0)
+
+	# 前向计算，输出一张与原图相同尺寸的图片矩阵
     def forward(self, x):
-        enc1 = self.enc1(x)
-        enc2 = self.enc2(enc1)
-        enc3 = self.enc3(enc2)
-        enc4 = self.enc4(enc3)
-        center = self.center(enc4)
-        dec4 = self.dec4(torch.cat([center, F.upsample(enc4, center.size()[2:], mode='bilinear')], 1))
-        dec3 = self.dec3(torch.cat([dec4, F.upsample(enc3, dec4.size()[2:], mode='bilinear')], 1))
-        dec2 = self.dec2(torch.cat([dec3, F.upsample(enc2, dec3.size()[2:], mode='bilinear')], 1))
-        dec1 = self.dec1(torch.cat([dec2, F.upsample(enc1, dec2.size()[2:], mode='bilinear')], 1))
-        final = self.final(dec1)
-        return F.upsample(final, x.size()[2:], mode='bilinear')
+        e1 = self.Conv1(x)
+
+        e2 = self.Maxpool1(e1)
+        e2 = self.Conv2(e2)
+
+        e3 = self.Maxpool2(e2)
+        e3 = self.Conv3(e3)
+
+        e4 = self.Maxpool3(e3)
+        e4 = self.Conv4(e4)
+
+        e5 = self.Maxpool4(e4)
+        e5 = self.Conv5(e5)
+
+        d5 = self.Up5(e5)
+        d5 = torch.cat((e4, d5), dim=1)  # 将e4特征图与d5特征图横向拼接
+
+        d5 = self.Up_conv5(d5)
+
+        d4 = self.Up4(d5)
+        d4 = torch.cat((e3, d4), dim=1)  # 将e3特征图与d4特征图横向拼接
+        d4 = self.Up_conv4(d4)
+
+        d3 = self.Up3(d4)
+        d3 = torch.cat((e2, d3), dim=1)  # 将e2特征图与d3特征图横向拼接
+        d3 = self.Up_conv3(d3)
+
+        d2 = self.Up2(d3)
+        d2 = torch.cat((e1, d2), dim=1)  # 将e1特征图与d1特征图横向拼接
+        d2 = self.Up_conv2(d2)
+
+        out = self.Conv(d2)
+
+
+        return out
 
 if __name__ == '__main__':
-    x = torch.rand(1,3,224,224)
-    net = UNet(num_classes=21)
-    out = net(x)
+    X = torch.rand(1,3,224,224)
+    net = U_Net(in_ch=3, out_ch=2)
+    out = net(X)
     print(out.shape)
