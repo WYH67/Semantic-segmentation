@@ -99,7 +99,7 @@ class U_Net(nn.Module):
 
         self.Conv = nn.Conv2d(filters[0], out_ch, kernel_size=1, stride=1, padding=0)
 
-	# 前向计算，输出一张与原图相同尺寸的图片矩阵
+    # 前向计算，输出一张与原图相同尺寸的图片矩阵
     def forward(self, x):
         e1 = self.Conv1(x)
 
