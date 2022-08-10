@@ -1,12 +1,15 @@
 import torch.nn as nn
 import torch
 
-# Encoder
+# Encoder阶段：
+# 卷积层的主要作用就是获取图像的局部信息，并传送给池化层，然后由2x2最大池化处理，把最大值特征再次传递到下一层。
+# 所以在这部分当中，Convolution+Pooling的主要作用从图像中获取信息。
 class Encoder(nn.Module):
     def __init__(self):
         super(Encoder, self).__init__()
         # 前13层是VGG16的前13层,分为5个stage
         # 因为在下采样时要保存最大池化层的索引, 方便起见, 池化层不写在stage中
+        # 卷积层负责获取图像局域特征，池化层对图像进行下采样并且将尺度不变特征传送到下一层，而BN主要对训练图像的分布归一化，加速学习
         self.stage_1 = nn.Sequential(
             nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1),
             nn.BatchNorm2d(64),
@@ -90,7 +93,9 @@ class Encoder(nn.Module):
         return x, pool_indices
 
 
-# SegNet网络, Encoder-Decoder
+# Decoder阶段
+# 将特征层进行上采样，然后交给卷积层进行处理。上采样后的2x2区域只有一个前一层传来的1x1特征点，其余区域都是空值，因此这些空值需要被填补成适当的特征值，来让这个区域变得完整并且平滑。
+# 这个工作就是由卷积层担任的。所以位于Decoder当中的卷积层的作用是对图像进行“填补”。
 class Decoder(nn.Module):
     def __init__(self, num_classes):
         super(Decoder, self).__init__()
@@ -179,8 +184,8 @@ class SegNet(nn.Module):
         return out
 
 if __name__ == '__main__':
-    x = torch.rand(1,3,256,256)
-    model = SegNet(21)
+    x = torch.rand(1,3,224,224)
+    model = SegNet(num_classes=21)
     y = model(x)
     print(y.shape)
     # import torchstat
