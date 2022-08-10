@@ -65,7 +65,7 @@ class Encoder(nn.Module):
         )
 
     def forward(self, x):
-        # 用来保存各层的池化索引
+        # 在进行2×2最大池化时，存储相应的最大池化索引（位置）
         pool_indices = []
         x = x.float()
 
