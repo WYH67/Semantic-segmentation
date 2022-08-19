@@ -42,3 +42,5 @@
 
 - [ ] 🚗 Cross Entropy Loss Function
 
+### 平均交并比（MIoU）
+- [ ] 🚜 
