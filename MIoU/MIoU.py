@@ -1,6 +1,3 @@
-"""
-refer to https://github.com/jfzhang95/pytorch-deeplab-xception/blob/master/utils/metrics.py
-"""
 import numpy as np
 
 __all__ = ['SegmentationMetric']
