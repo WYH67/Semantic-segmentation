@@ -41,7 +41,12 @@
 
 ### 损失函数（Loss function）
 
-- [ ] 🚗 Cross Entropy Loss Function
+- [ ] 🚗 L1loss
+- [ ] 🚗 MSELoss
+- [ ] 🚗 CroosEntropyLoss
+- [ ] 🚗 NLLLoss
+- [ ] 🚗 PoissonNLLLoss
+- [ ] 🚗 KLDivLoss
 
 ### 平均交并比（MIoU）
 - [x] 🚜 
