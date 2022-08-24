@@ -32,6 +32,6 @@ o_0 = reduce_False(output, target)
 o_1 = size_average_True(output, target)
 o_2 = size_average_False(output, target)
 
-print('\nreduce=False, 输出同维度的loss:\n{}\n'.format(o_0))
-print('size_average=True，\t求平均:\t{}'.format(o_1))
-print('size_average=False，\t求和:\t{}'.format(o_2))
+print('\nreduce=False, 输出同维度的loss:\n{}\n'.format(o_0))  # tensor([[0.5000, 0.5000],[0.5000, 0.5000]], grad_fn=<L1LossBackward0>)
+print('size_average=True，\t求平均:\t{}'.format(o_1)) # 0.5
+print('size_average=False，\t求和:\t{}'.format(o_2)) # 0.2
