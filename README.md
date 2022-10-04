@@ -41,9 +41,9 @@
 
 ### 损失函数（Loss function）
 
-- [ ] 🚗 L1loss
-- [ ] 🚗 MSELoss
-- [ ] 🚗 CroosEntropyLoss
+- [x] 🚗 L1loss
+- [x] 🚗 MSELoss
+- [x] 🚗 CroosEntropyLoss
 - [ ] 🚗 NLLLoss
 - [ ] 🚗 PoissonNLLLoss
 - [ ] 🚗 KLDivLoss
