@@ -27,7 +27,7 @@
 - [x] 🚌 DeepLabv3+（PyTorch）
 - [x] 🚌 HRNet（PyTorch）
 - [ ] 🚌 RefineNet（PyTorch）
-- [ ] 🚌 PSPNet（PyTorch）
+- [x] 🚌 PSPNet（PyTorch）
 
 
 
