@@ -10,7 +10,7 @@
 | DeepLabv3  | 2017 |1.本文重新讨论了空洞卷积的使用，在串行模块和空间金字塔池化的框架下，能够获取更大的感受野从而获取多尺度信息<br />2.改进了ASPP模块：由不同采样率的空洞卷积和BN层组成，我们尝试以串行或并行的方式布局模块<br />3.讨论了一个重要问题：使用大采样率的3×3的空洞卷积，因为图像边界响应无法捕捉远距离信息(小目标)，会退化为1×1的卷积, 我们建议将图像级特征融合到ASPP模块中      | [paper-Deeplabv3](https://arxiv.org/pdf/1706.05587.pdf) | [code-Deeplabv3](https://github.com/WYH67/Semantic-segmentation/blob/main/DeepLab) |
 | DeepLabv3+ | 2018 | 1.扩展了DeepLabv3，添加了一个简单而有效的**解码器模块**来细化分割结果，特别是沿着对象边界<br />2.使用DeepLabv3作为一个强大的编码器模块和一个简单而有效的解码器模块<br />3.为了在多个尺度上获取上下文信息，DeepLabv3应用了多个不同速率的并行atrous卷积<br /> | [paper-Deeplabv3+](https://arxiv.org/pdf/1802.02611.pdf) | [code-Deeplabv3+](https://github.com/WYH67/Semantic-segmentation/blob/main/DeepLab)|
 | HRNet | 2019 | 1.高分辨率到低分辨率的卷积流并行连接.<br />2.跨分辨率重复交换信息。<br />好处是结果表示在语义上更丰富，在空间上更精确。 | [paper-HRNet](https://arxiv.org/abs/1902.09212) | [code-HRNet](https://github.com/WYH67/Semantic-segmentation/blob/main/HRNet/hrnet.py) |
-| PsPNet | 2017 | 1.提出Pyramid Pooling Module,在不同层次上融合feature，以达到语义和细节融合.<br />2.提出一种深度监督loss优化策略<br /> | [paper-PSPet](https://arxiv.org/abs/1612.01105) | [code-PsPNet](https://github.com/WYH67/Semantic-segmentation/blob/main/PsPNet/PsPnet.py) |
+| PsPNet | 2017 | 1.提出Pyramid Pooling Module,在不同层次上融合feature，以达到语义和细节融合.<br />2.提出一种深度监督loss优化策略<br /> | [paper-PSPet](https://arxiv.org/abs/1612.01105) | [code-PsPNet](https://github.com/WYH67/Semantic-segmentation/tree/main/PsPNet/PsPNet.py) |
 ## 待完成&完成（TODO）
 
 
