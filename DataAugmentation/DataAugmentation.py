@@ -10,13 +10,16 @@
 '''
 
 
-#-------------------------原图-------------------------------------------#
 from PIL import Image
+import torch
 from torchvision import transforms as tfs
+import numpy as np
+import cv2
 
+#-------------------------原图-------------------------------------------#
 img = Image.open('./dog.jpg')
-print('原图：')
-img
+print('原图：',img)
+
 
 
 # ----------------------------随机翻转（水平、上下）---------------------------------#
@@ -32,7 +35,7 @@ rv_img
 
 
 #--------------------------------随机剪裁--------------------------------------#
-rv_img = transforms.RandomCrop([200, 200])(im)
+rv_img = tfs.RandomCrop([200, 200])(img)
 rv_img
 
 
@@ -73,7 +76,7 @@ def channel_shuffle(x, groups):
 # 使用高斯核对图像进行高斯模糊变换。这种方法有助于降低图像的清晰度和清晰度，然后将生成的图像输入到神经网络中，神经网络在样本的学习模式方面变得更加稳健。
 # sigma:标准差(min,max)
 blurred_imgs = [T.GaussianBlur(kernel_size=(3, 3), sigma=sigma)(orig_img) for sigma in (3,7)]
-plot(blurred_imgs)
+blurred_imgs
 
 
 # -----------------------------高斯噪声----------------------------------#
@@ -119,12 +122,12 @@ cj_img
   原始图像由于其灰度分布可能集中在较窄的区间，造成图像不够清晰（如上图左），曝光不足将使图像灰度级集中在低亮度范围内。
   采用直方图均衡化，可以把原始图像的直方图变换为均匀分布的形式，这样就增加了像素之间灰度值差别的动态范围，从而达到增强图像整体对比度的效果。
 '''
-def hist_gray(img_gary):
-    h,w = img_gary.shape
+def hist_gray(img_gray):
+    h,w = img_gray.shape
     gray_level2 = pix_gray(img_gray)
     lut = np.zeros(256)
     for i in range(256):
         lut[i] = 255.0/(h*w)*gray_level2[i] #得到新的灰度级
     lut = np.uint8(lut + 0.5)
     out = cv2.LUT(img_gray,lut)
-    return 
+    return out
