@@ -11,6 +11,7 @@
 | DeepLabv3+ | 2018 | 1.扩展了DeepLabv3，添加了一个简单而有效的**解码器模块**来细化分割结果，特别是沿着对象边界<br />2.使用DeepLabv3作为一个强大的编码器模块和一个简单而有效的解码器模块<br />3.为了在多个尺度上获取上下文信息，DeepLabv3应用了多个不同速率的并行atrous卷积<br /> | [paper-Deeplabv3+](https://arxiv.org/pdf/1802.02611.pdf) | [code-Deeplabv3+](https://github.com/WYH67/Semantic-segmentation/blob/main/DeepLab)|
 | HRNet | 2019 | 1.高分辨率到低分辨率的卷积流并行连接.<br />2.跨分辨率重复交换信息。<br />好处是结果表示在语义上更丰富，在空间上更精确。 | [paper-HRNet](https://arxiv.org/abs/1902.09212) | [code-HRNet](https://github.com/WYH67/Semantic-segmentation/blob/main/HRNet/hrnet.py) |
 | PsPNet | 2017 | 1.提出Pyramid Pooling Module,在不同层次上融合feature，以达到语义和细节融合.<br />2.提出一种深度监督loss优化策略<br /> | [paper-PSPet](https://arxiv.org/abs/1612.01105) | [code-PsPNet](https://github.com/WYH67/Semantic-segmentation/tree/main/PsPNet/PsPNet.py) |
+|RefineNet|  | | ||
 ## 待完成&完成（TODO）
 
 
@@ -26,7 +27,7 @@
 - [x] 🚌 DeepLabv3（PyTorch）
 - [x] 🚌 DeepLabv3+（PyTorch）
 - [x] 🚌 HRNet（PyTorch）
-- [ ] 🚌 RefineNet（PyTorch）
+- [x] 🚌 RefineNet（PyTorch）
 - [x] 🚌 PSPNet（PyTorch）
 
 
@@ -59,7 +60,7 @@
 - [ ] 🚗 KLDivLoss
 
 ### 平均交并比（MIoU）
-- [x] 🚜 
+- [x] 🚜 MIoU
 
 ### 优化器(10种)
 - [ ] 🚐 Optimizer
